@@ -1,4 +1,4 @@
-FROM php:8.0.18-cli-alpine3.15 as compile
+FROM php:8.1-cli-alpine3.15 as compile
 
 ENV PHP_REDIS_VERSION=5.3.7 \
     PHP_MONGODB_VERSION=1.16.1 \
@@ -10,7 +10,8 @@ ENV PHP_REDIS_VERSION=5.3.7 \
     PHP_ZSTD_VERSION="9a01a21b1f1555100540db0ae4f71274407f7896" \
     PHP_BROTLI_VERSION="50aa46650c79339e5e886919dbfcb6edac00967f" \
     PHP_SNAPPY_VERSION="c27f830dcfe6c41eb2619a374de10fd0597f4939" \
-    PHP_LZ4_VERSION="2f006c3e4f1fb3a60d2656fc164f9ba26b71e995"
+    PHP_LZ4_VERSION="2f006c3e4f1fb3a60d2656fc164f9ba26b71e995" \
+    PHP_XDEBUG_VERSION=3.2.0
 
 RUN \
   apk add --no-cache --virtual .deps \
@@ -29,7 +30,8 @@ RUN \
   zstd-dev \
   brotli-dev \
   lz4-dev \
-  curl-dev
+  curl-dev \
+  linux-headers
 
 RUN docker-php-ext-install sockets
 
@@ -51,16 +53,6 @@ RUN \
   ./configure --enable-sockets --enable-http2 --enable-openssl --enable-swoole-curl && \
   make && make install && \
   cd ..
-
-## Swoole Debugger setup
-RUN cd /tmp && \
-    apk add boost-dev && \
-    git clone --depth 1 https://github.com/swoole/yasd && \
-    cd yasd && \
-    phpize && \
-    ./configure && \
-    make && make install && \
-    cd ..;
 
 ## Imagick Extension
 FROM compile AS imagick
@@ -146,6 +138,16 @@ RUN \
   ./configure --enable-scrypt && \
   make && make install
 
+## Xdebug Extension
+FROM compile AS xdebug
+RUN \
+  # Xdebug Extension
+  git clone --depth 1 --branch $PHP_XDEBUG_VERSION https://github.com/xdebug/xdebug.git && \
+  cd xdebug && \
+  phpize && \
+  ./configure && \
+  make && make install
+
 FROM php:8.0.18-cli-alpine3.15 as final
 
 LABEL maintainer="team@appwrite.io"
@@ -193,17 +195,18 @@ RUN \
 
 WORKDIR /usr/src/code
 
-COPY --from=swoole /usr/local/lib/php/extensions/no-debug-non-zts-20200930/swoole.so /usr/local/lib/php/extensions/no-debug-non-zts-20200930/yasd.so* /usr/local/lib/php/extensions/no-debug-non-zts-20200930/
-COPY --from=redis /usr/local/lib/php/extensions/no-debug-non-zts-20200930/redis.so /usr/local/lib/php/extensions/no-debug-non-zts-20200930/
-COPY --from=imagick /usr/local/lib/php/extensions/no-debug-non-zts-20200930/imagick.so /usr/local/lib/php/extensions/no-debug-non-zts-20200930/
-COPY --from=yaml /usr/local/lib/php/extensions/no-debug-non-zts-20200930/yaml.so /usr/local/lib/php/extensions/no-debug-non-zts-20200930/
-COPY --from=maxmind /usr/local/lib/php/extensions/no-debug-non-zts-20200930/maxminddb.so /usr/local/lib/php/extensions/no-debug-non-zts-20200930/
-COPY --from=mongodb /usr/local/lib/php/extensions/no-debug-non-zts-20200930/mongodb.so /usr/local/lib/php/extensions/no-debug-non-zts-20200930/
-COPY --from=scrypt /usr/local/lib/php/extensions/no-debug-non-zts-20200930/scrypt.so /usr/local/lib/php/extensions/no-debug-non-zts-20200930/
-COPY --from=zstd /usr/local/lib/php/extensions/no-debug-non-zts-20200930/zstd.so /usr/local/lib/php/extensions/no-debug-non-zts-20200930/
-COPY --from=brotli /usr/local/lib/php/extensions/no-debug-non-zts-20200930/brotli.so /usr/local/lib/php/extensions/no-debug-non-zts-20200930/
-COPY --from=lz4 /usr/local/lib/php/extensions/no-debug-non-zts-20200930/lz4.so /usr/local/lib/php/extensions/no-debug-non-zts-20200930/
-COPY --from=snappy /usr/local/lib/php/extensions/no-debug-non-zts-20200930/snappy.so /usr/local/lib/php/extensions/no-debug-non-zts-20200930/
+COPY --from=swoole /usr/local/lib/php/extensions/no-debug-non-zts-20210902/swoole.so /usr/local/lib/php/extensions/no-debug-non-zts-20210902/
+COPY --from=redis /usr/local/lib/php/extensions/no-debug-non-zts-20210902/redis.so /usr/local/lib/php/extensions/no-debug-non-zts-20210902/
+COPY --from=imagick /usr/local/lib/php/extensions/no-debug-non-zts-20210902/imagick.so /usr/local/lib/php/extensions/no-debug-non-zts-20210902/
+COPY --from=yaml /usr/local/lib/php/extensions/no-debug-non-zts-20210902/yaml.so /usr/local/lib/php/extensions/no-debug-non-zts-20210902/
+COPY --from=maxmind /usr/local/lib/php/extensions/no-debug-non-zts-20210902/maxminddb.so /usr/local/lib/php/extensions/no-debug-non-zts-20210902/
+COPY --from=mongodb /usr/local/lib/php/extensions/no-debug-non-zts-20210902/mongodb.so /usr/local/lib/php/extensions/no-debug-non-zts-20210902/
+COPY --from=scrypt /usr/local/lib/php/extensions/no-debug-non-zts-20210902/scrypt.so /usr/local/lib/php/extensions/no-debug-non-zts-20210902/
+COPY --from=zstd /usr/local/lib/php/extensions/no-debug-non-zts-20210902/zstd.so /usr/local/lib/php/extensions/no-debug-non-zts-20210902/
+COPY --from=brotli /usr/local/lib/php/extensions/no-debug-non-zts-20210902/brotli.so /usr/local/lib/php/extensions/no-debug-non-zts-20210902/
+COPY --from=lz4 /usr/local/lib/php/extensions/no-debug-non-zts-20210902/lz4.so /usr/local/lib/php/extensions/no-debug-non-zts-20210902/
+COPY --from=snappy /usr/local/lib/php/extensions/no-debug-non-zts-20210902/snappy.so /usr/local/lib/php/extensions/no-debug-non-zts-20210902/
+COPY --from=xdebug /usr/local/lib/php/extensions/no-debug-non-zts-20210902/xdebug.so /usr/local/lib/php/extensions/no-debug-non-zts-20210902/
 
 
 # Enable Extensions
@@ -217,6 +220,7 @@ RUN echo extension=zstd.so >> /usr/local/etc/php/conf.d/zstd.ini
 RUN echo extension=brotli.so >> /usr/local/etc/php/conf.d/brotli.ini
 RUN echo extension=lz4.so >> /usr/local/etc/php/conf.d/lz4.ini
 RUN echo extension=snappy.so >> /usr/local/etc/php/conf.d/snappy.ini
+RUN echo extension=xdebug.so >> /usr/local/etc/php/conf.d/xdebug.ini
 
 EXPOSE 80
 
