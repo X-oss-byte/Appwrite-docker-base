@@ -2,7 +2,7 @@ FROM php:8.0.30-cli-alpine3.16 as compile
 
 ENV PHP_REDIS_VERSION="5.3.7" \
     PHP_MONGODB_VERSION="1.16.1" \
-    PHP_SWOOLE_VERSION="v5.0.3" \
+    PHP_SWOOLE_VERSION="v5.0.1" \
     PHP_IMAGICK_VERSION="3.7.0" \
     PHP_YAML_VERSION="2.2.3" \
     PHP_MAXMINDDB_VERSION="v1.11.0" \
@@ -48,7 +48,7 @@ RUN \
   git clone --depth 1 --branch $PHP_SWOOLE_VERSION https://github.com/swoole/swoole-src.git && \
   cd swoole-src && \
   phpize && \
-  ./configure --enable-sockets --enable-http2 --enable-openssl --enable-swoole-curl && \
+  ./configure --enable-sockets --enable-http2 --enable-openssl && \
   make && make install && \
   cd ..
 
