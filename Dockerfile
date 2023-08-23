@@ -102,18 +102,16 @@ RUN \
 
 # Zstd Compression
 FROM compile as zstd
-RUN git clone --recursive -n https://github.com/kjdev/php-ext-zstd.git \
+RUN git clone --recursive --branch $PHP_ZSTD_VERSION  https://github.com/kjdev/php-ext-zstd.git \
   && cd php-ext-zstd \
-  && git checkout $PHP_ZSTD_VERSION \
   && phpize \
   && ./configure --with-libzstd \
   && make && make install
 
 ## Brotli Extension
 FROM compile as brotli
-RUN git clone https://github.com/kjdev/php-ext-brotli.git \
+RUN git clone --branch $PHP_BROTLI_VERSION https://github.com/kjdev/php-ext-brotli.git \
   && cd php-ext-brotli \
-  && git reset --hard $PHP_BROTLI_VERSION \
   && phpize \
   && ./configure --with-libbrotli \
   && make && make install
